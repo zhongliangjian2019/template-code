@@ -2,7 +2,8 @@
 ###### 作用：
 记录工作中积累的通用性样板代码  
 ###### 仓库结构：
-dnn_engine: 包含各类模型推理引擎使用实现, 如OpenCV-DNN, OpenVION, TensorRT等  
+dnn_engine: 包含各类模型推理引擎使用实现, 如OpenCV-DNN, OpenVION, TensorRT等
+dnn_detector: 实现了基于yolov8/11的目标检测与实例分割的单batch推理。
 cv_tool: 包含基于OpenCV自定义的各种通用图像处理工具函数  
 com_tool: 包含自定自定义工具函数  
-logger: 包含基于log4cpp定义的日志记录器  
+logger: 包含基于log4cpp定义的日志记录器
