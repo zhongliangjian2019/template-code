@@ -18,8 +18,7 @@
 ///
 cv::Point CVTool::GetContourCenter(const std::vector<cv::Point> &contour)
 {
-	//LOG_DEBUG("Running ");
-
+    //LOG_DEBUG("Running ");
     cv::Moments mu;
     mu = cv::moments(contour, true);
 
@@ -61,9 +60,9 @@ cv::Point CVTool::GetContourCenter(const std::vector<cv::Point> &contour)
 ///
 void CVTool::GetContourCenterAndRadius(const std::vector<cv::Point>& contour, cv::Point& center, int& radius, float scale)
 {
-	cv::Rect bndbox = cv::boundingRect(contour);
-	center = cv::Point(bndbox.x + bndbox.width / 2, bndbox.y + bndbox.height / 2);
-	radius = int((bndbox.width + bndbox.height) / (4.0 * scale));
+    cv::Rect bndbox = cv::boundingRect(contour);
+    center = cv::Point(bndbox.x + bndbox.width / 2, bndbox.y + bndbox.height / 2);
+    radius = int((bndbox.width + bndbox.height) / (4.0 * scale));
 }
 
 ///
