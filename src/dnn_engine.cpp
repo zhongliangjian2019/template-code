@@ -1,4 +1,4 @@
-﻿#include "dnn_engine.h"
+#include "dnn_engine.h"
 #include "com_tool.h"
 #include "logger.h"
 
@@ -29,10 +29,10 @@ bool MyOpenCV::InitializeEngine(const std::string& model_path, const cv::Size& s
 }
 
 // OpenCV do inference
-cv::Mat MyOpenCV::Inference(const cv::Mat& input_blob)
+void MyOpenCV::Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs)
 {
 	m_net.setInput(input_blob);
-	return m_net.forward();
+	return m_net.forward(output_blobs, m_net.getUnconnectedOutLayersNames());
 }
 
 #ifdef OPENVINO
