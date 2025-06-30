@@ -7,6 +7,81 @@
 #define DOUBLEEPSINON 0.0001  //double相等精度
 
 ///
+/// @brief  获取最大轮廓索引
+///     
+/// @param[in] contours 输入轮廓数组
+/// 
+/// @return index 最大轮廓索引
+///
+/// @par History:
+/// @li ZhongLiangJian, 2025/6/26-14:05:02
+///
+int CVTool::GetMaxContour(const std::vector<std::vector<cv::Point>>& contours)
+{
+	int max_idx = -1;
+	// 一个元素都没有直接默认值
+	// 只有一个元素
+	if (contours.size() == 1)
+	{
+		max_idx = 0;
+	}
+
+	// 两个及以上
+	if (contours.size() > 1)
+	{
+		std::vector<int> contour_areas;
+		for (const auto& contour : contours)
+		{
+			contour_areas.push_back(cv::contourArea(contour));
+		}
+		max_idx = std::distance(contour_areas.begin(), std::max_element(contour_areas.begin(), contour_areas.end()));
+	}
+
+	return max_idx;
+}
+
+///
+/// @brief  居中填充图像到方形
+///     
+/// @param[in] input 输入图像
+/// @param[in] is_center 是否按中心填充
+///	@param[out] pad_x 宽度方向填充量
+/// @param[out] pad_y 高度方向填充量
+/// 
+/// @return  填充后的图像
+///
+/// @par History:
+/// @li ZhongLiangJian, 2025/6/26-14:05:02
+///
+cv::Mat CVTool::FormatToSquare(const cv::Mat& input, bool is_center, int& pad_x, int& pad_y)
+{
+	int width = input.cols;
+	int height = input.rows;
+
+	int max_length = std::max(width, height);
+
+	cv::Mat output = cv::Mat::zeros(cv::Size(max_length, max_length), input.type());
+
+	if (is_center)
+	{
+		// 居中方式
+		pad_x = (max_length - width) / 2;
+		pad_y = (max_length - height) / 2;
+		
+	}
+	else
+	{
+		// 左上方式
+		pad_x = 0;
+		pad_y = 0;
+	}
+
+	// 数据拷贝
+	input.copyTo(output(cv::Rect(pad_x, pad_y, width, height)));
+	return output;
+}
+
+///
 /// @brief  计算轮廓中心（单个）
 ///     
 /// @param[in]  contour 区域轮廓  
