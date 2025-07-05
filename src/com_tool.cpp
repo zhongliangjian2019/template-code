@@ -1,11 +1,9 @@
 ﻿#include <vector>
 #include <algorithm>
-#include <opencv2/core.hpp>
 #include <sys/stat.h>
-#include <Windows.h>
-#include "com_tool.h"
 #include <iomanip>
 #include <sstream>
+#include "com_tool.h"
 
 ///
 /// @brief  判断文件是否存在
@@ -23,7 +21,16 @@ bool IsFileExists(const std::string& filename)
 	return (stat(filename.c_str(), &buffer) == 0);
 }
 
-// 从路径中分离文件名
+///
+/// @brief  从路径中获取文件名
+///     
+/// @param[in]	path  文件路径  
+///
+/// @return  文件名
+///
+/// @par History:
+/// @li 6883/ZhongLiangJian, 2023/2/20-11:49:42
+///
 std::string GetFilename(const std::string& path)
 {
 	size_t pos = path.find_last_of("/\\");
@@ -67,32 +74,11 @@ void DataNormalize(std::vector<double>& data, double out_max, double out_min, do
 }
 
 ///
-/// @brief  windows local string to unicode8 string
+/// @brief  字符串替换
 ///     
-/// @param[in]  windows local string
-///
-/// @return  unicode8 string
-///
-/// @par History:
-/// @li 6883/ZhongLiangJian, 2023/5/12-17:31
-///
-std::string localToUtf8(const std::string& str)
-{
-	int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
-	std::vector<wchar_t> wideBuffer(wideLen);
-	MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, wideBuffer.data(), wideLen);
-
-	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideBuffer.data(), -1, nullptr, 0, nullptr, nullptr);
-	std::vector<char> utf8Buffer(utf8Len);
-	WideCharToMultiByte(CP_UTF8, 0, wideBuffer.data(), -1, utf8Buffer.data(), utf8Len, nullptr, nullptr);
-
-	return std::string(utf8Buffer.data());
-}
-
-///
-/// @brief  string replace
-///     
-/// @param[in]  strSrc
+/// @param[in]  strSrc  字符串数据
+/// @param[in]  oldStr  旧字符串
+/// @param[in]  newStr  新字符串
 ///
 /// @return  
 ///

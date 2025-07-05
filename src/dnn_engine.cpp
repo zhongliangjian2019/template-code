@@ -2,6 +2,57 @@
 #include "com_tool.h"
 #include "logger.h"
 
+/**
+ * @brief  创建引擎
+ * 
+ * @return  推理引擎
+ * 
+ * @li
+ * - 2023-06-24: zhongliangjian, create
+ */
+std::unique_ptr<MyDnnEngine> MyDnnEngine::CreateEngine(const ModelParams& model_params)
+{
+	std::unique_ptr<MyDnnEngine> model;
+
+	// 设置推理引擎
+	switch (model_params.engine)
+	{
+		case DnnEngineType::OPENCV_DNN:
+		{
+			model = std::make_unique<MyOpenCV>();
+			break;
+		}
+		case DnnEngineType::OPENVINO:
+		{
+			model = std::make_unique<MyOpenVINO>();
+			break;
+		}
+		case DnnEngineType::TENSORRT:
+		{
+			model = std::make_unique<MyTensorRT>();
+			break;
+		}
+		default:
+		{
+			model = std::make_unique<MyOpenCV>();
+			LOG_WARNING("dnn engine type not support, use default opencv_dnn engine.");
+		}
+	}
+	LOG_INFO("use dnn engine: " + model->GetEngineName());
+
+	// 推理引擎初始化
+	if (true == model->InitializeEngine(model_params.model_file, model_params.input_size, model_params.batch_size, model_params.channel_num))
+	{
+		LOG_INFO("model file load success!");
+	}
+	else
+	{
+		LOG_ERROR("model file load failed! file: " + model_params.model_file);
+	}
+
+	return model;
+}
+
 // Initialize OpenCV inference engine
 bool MyOpenCV::InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch)
 {
@@ -180,11 +231,11 @@ cv::Mat MyOpenVINO::ConvertTensorToMat(const ov::Tensor& tensor)
 }
 
 // Openvino do inference
-cv::Mat MyOpenVINO::Inference(const cv::Mat& input_mat)
+void MyOpenVINO::Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs)
 {
 	LOG_DEBUG("Runing ");
 	// Step 1. Set up input
-	ov::Tensor input_tensor = ConvertMatToTensor(input_mat);
+	ov::Tensor input_tensor = ConvertMatToTensor(input_blob);
 
 	// Step 2. Prepare input
 	m_infer_request.set_input_tensor(input_tensor);
@@ -195,8 +246,7 @@ cv::Mat MyOpenVINO::Inference(const cv::Mat& input_mat)
 	// Step 4. Process output
 	const ov::Tensor& output_tensor = m_infer_request.get_output_tensor(0);
 	cv::Mat output_mat = ConvertTensorToMat(output_tensor);
-
-	return output_mat;
+	output_blobs.push_back(output_mat);
 }
 
 #endif
@@ -245,7 +295,7 @@ bool MyTensorRT::InitializeEngine(const std::string& onnx_model_path, const cv::
 }
 
 // Model inference
-cv::Mat MyTensorRT::Inference(const cv::Mat& input_mat)
+void MyTensorRT::Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs)
 {
 	auto context = std::shared_ptr<nvinfer1::IExecutionContext>(m_engine->createExecutionContext());
 	if (!context)
@@ -261,7 +311,7 @@ cv::Mat MyTensorRT::Inference(const cv::Mat& input_mat)
 		return cv::Mat();
 	}
 	assert(m_engine->getBindingDataType(input_idx) == nvinfer1::DataType::kFLOAT);
-	auto input_dims = nvinfer1::Dims4{ input_mat.size[0], input_mat.size[1], input_mat.size[2], input_mat.size[3] };
+	auto input_dims = nvinfer1::Dims4{ input_blob.size[0], input_blob.size[1], input_blob.size[2], input_blob.size[3] };
 	context->setBindingDimensions(input_idx, input_dims);
 	size_t input_size = std::accumulate(input_dims.d, input_dims.d + input_dims.nbDims, 1, std::multiplies<int64_t>()) * sizeof(float);
 
@@ -299,7 +349,7 @@ cv::Mat MyTensorRT::Inference(const cv::Mat& input_mat)
 
 	// Copy input data to input binding memory
 	auto input_buffer = std::unique_ptr<float>{ new float[input_size / sizeof(float)] };
-	memcpy(input_buffer.get(), input_mat.ptr<float>(0), input_size);
+	memcpy(input_buffer.get(), input_blob.ptr<float>(0), input_size);
 	if (cudaMemcpyAsync(input_memory, input_buffer.get(), input_size, cudaMemcpyHostToDevice, stream) != cudaSuccess)
 	{
 		LOG_ERROR("cuda memory copy of input failed, size = " + int2str(input_size) + "bytes");
@@ -335,7 +385,7 @@ cv::Mat MyTensorRT::Inference(const cv::Mat& input_mat)
 	cudaFree(input_memory);
 	cudaFree(output_memory);
 
-	return output_mat;
+	output_blobs.push_back(output_mat);
 }
 
 #endif

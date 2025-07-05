@@ -46,9 +46,9 @@ struct InstanceBbox
 };
 
 /**
-* @class InstanceBbox
+* @class DetectParams
 *
-* @brief 实例分割结果结构体
+* @brief 检测器参数
 *
 * @li
 * - 2025-06-24: zhongliangjian, create

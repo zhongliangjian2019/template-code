@@ -12,37 +12,7 @@ DnnDetector::DnnDetector(const ModelParams& model_params, const DetectParams& de
 	m_detect_params = detect_params;
 
 	// 设置推理引擎
-	switch (model_params.engine)
-	{
-	case DnnEngineType::OPENCV_DNN:
-	{
-		m_model = std::make_unique<MyOpenCV>();
-	}
-	case DnnEngineType::OPENVINO:
-	{
-		m_model = std::make_unique<MyOpenVINO>();
-	}
-	case DnnEngineType::TENSORRT:
-	{
-		m_model = std::make_unique<MyTensorRT>();
-	}
-	default:
-	{
-		m_model = std::make_unique<MyOpenCV>();
-		LOG_WARNING("dnn engine type not support, use default opencv_dnn engine.");
-	}
-	}
-	LOG_INFO("use dnn engine: " + m_model->GetEngineName());
-
-	// 推理引擎初始化
-	if (true == m_model->InitializeEngine(model_params.model_file, model_params.input_size, model_params.batch_size, model_params.channel_num))
-	{
-		LOG_INFO("model file load success!");
-	}
-	else
-	{
-		LOG_ERROR("model file load failed! file: " + model_params.model_file);
-	}
+	m_model = MyDnnEngine::CreateEngine(model_params);
 }
 
 /**

@@ -1,10 +1,17 @@
-///
-/// 自定义OpenCV工具函数
-///
+/**
+ * @file cv_tool.h
+ *
+ * @brief 自定义OpenCV工具函数
+ *
+ * @author zhongliangjian
+ *
+ * @date 2023-06-24
+ */
 #ifndef _CV_TOOL_H_
 #define _CV_TOOL_H_
 
 #include <string>
+#include <vector>
 #include <opencv2/opencv.hpp>
 
 // Opencv工具

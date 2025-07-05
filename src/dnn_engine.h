@@ -24,7 +24,7 @@
  * @brief 模型推理框架类型
  *
  * @li
- * - 2025-06-24: zhongliangjian, create
+ * - 2023-06-24: zhongliangjian, create
  */
 enum class DnnEngineType
 {
@@ -40,7 +40,7 @@ enum class DnnEngineType
  * @brief 模型初始化参数
  *
  * @li
- * - 2025-06-24: zhongliangjian, create
+ * - 2023-06-24: zhongliangjian, create
  */
 struct ModelParams
 {
@@ -51,33 +51,112 @@ struct ModelParams
 	DnnEngineType engine;	// 推理引擎
 };
 
-
-// Dnn Inference Engine
+/**
+ * @class MyDnnEngine
+ *
+ * @brief 通用模型推理引擎接口
+ * 
+ * @note 接口类，内含未实现的纯虚函数，不可直接实例化
+ *
+ * @li
+ * - 2023-06-24: zhongliangjian, create
+ */
 class MyDnnEngine
 {
 public:
+	/**
+	 * @brief 构造函数
+	 */
 	MyDnnEngine() = default;
+
+	/**
+	 * @brief 析构函数
+	 */
 	~MyDnnEngine() = default;
 
+	/**
+	 * @brief  推理引擎初始化
+	 * 
+	 * @param  model_path  模型路径
+	 * @param  size		   模型输入尺寸
+	 * @param  channel     输入通道
+	 * @param  batch	   批大小
+	 * 
+	 * @return  true/false
+	 * 
+	 * @li
+	 * - 2023-06-24: zhongliangjian, create
+	 */
 	virtual bool InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch) = 0;
 
+	/**
+	 * @brief  执行推理
+	 * 
+	 * @param  input_blob  推理输入（B,C,H,W）
+	 * @param  output_blobs  推理输出
+	 * 
+	 * @li
+	 * - 2023-06-24: zhongliangjian, create
+	 */
 	virtual void Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs) = 0;
 
-	virtual std::string GetEngineName() { return m_engine_name; };
+	/**
+	 * @brief  获取推理引擎名称
+	 * 
+	 * @return  推理引擎名称
+	 * 
+	 * @li
+	 * - 2023-06-24: zhongliangjian, create
+	 */
+	virtual std::string GetEngineName() 
+	{
+		return m_engine_name; 
+	};
+
+	/**
+	 * @brief  创建引擎
+	 * 
+	 * @return  推理引擎
+	 * 
+	 * @li
+	 * - 2023-06-24: zhongliangjian, create
+	 */
+	static std::unique_ptr<MyDnnEngine> CreateEngine(const ModelParams& model_params);
 
 protected:
 	std::string m_engine_name = "";
+	
 };
 
-// OpenCV Dnn Engine
-class MyOpenCV :public MyDnnEngine
+/**
+ * @class MyOpenCV
+ *
+ * @brief OpenCV-DNN推理引擎
+ *
+ * @li
+ * - 2023-06-24: zhongliangjian, create
+ */
+class MyOpenCV: public MyDnnEngine
 {
 public:
-	MyOpenCV() { m_engine_name = "OpenCV"; };
+	/**
+	 * @brief 构造函数
+	 */
+	MyOpenCV(): m_engine_name("OpenCV-DNN") {};
+
+	/**
+	 * @brief 构造函数
+	 */
 	~MyOpenCV() = default;
 
+	/**
+	 * @brief 推理引擎初始化（重写）
+	 */
 	virtual bool InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch);
 
+	/**
+	 * @brief 执行推理（重写）
+	 */
 	virtual void Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs);
 
 private:
@@ -85,31 +164,65 @@ private:
 	bool m_cuda_enabled = false;
 };
 
-// OpenVINO Dnn Engine
+/**
+ * @class MyOpenVINO
+ *
+ * @brief OpenVINO推理引擎
+ *
+ * @li
+ * - 2023-06-24: zhongliangjian, create
+ */
 class MyOpenVINO: public MyDnnEngine
 {
 public:
-	MyOpenVINO() { m_engine_name = "OpenVINO"; };
+	/**
+	 * @brief 构造函数
+	 */
+	MyOpenVINO(): m_engine_name("OpenVINO") {};
+
+	/**
+	 * @brief 构造函数
+	 */
 	~MyOpenVINO() = default;
 
 #ifndef OPENVINO
-	// Initialize OpenVINO inference engine
+	/**
+	 * @brief 推理引擎初始化（重写）
+	 */
 	virtual bool InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch) { return false; };
 
-	// Model inference
+	/**
+	 * @brief 执行推理（重写）
+	 */
 	virtual void Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs) {};
 #else
-	// Initialize OpenVINO inference engine
+	/**
+	 * @brief 推理引擎初始化（重写）
+	 */
 	virtual bool InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch);
 
-	// Model inference
-	virtual cv::Mat Inference(const cv::Mat& input_mat);
+	/**
+	 * @brief 执行推理（重写）
+	 */
+	virtual void Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs);
 
 private:
-	// Convert cv::Mat To ov::Tensor
+	/**
+	 * @brief 转换cv::Mat到ov::Tensor
+	 * 
+	 * @param cv_mat 输入数据（B,C,H,W）
+	 * 
+	 * @return 转换结果
+	 */
 	static ov::Tensor ConvertMatToTensor(const cv::Mat& cv_mat);
 
-	// Convert ov::Tensor To cv::Mat
+	/**
+	 * @brief 转换ov::Tensor到cv::Mat
+	 * 
+	 * @param ov_tensor 输入数据
+	 * 
+	 * @return 转换结果
+	 */
 	static cv::Mat ConvertTensorToMat(const ov::Tensor& ov_tensor);
 
 private:
@@ -117,8 +230,15 @@ private:
 #endif
 };
 
-// TensorRT Dnn Engine
 
+/**
+ * @class Logger
+ *
+ * @brief TensorRT推理引擎日志记录器
+ *
+ * @li
+ * - 2023-06-24: zhongliangjian, create
+ */
 #ifdef TENSORRT
 class Logger : public nvinfer1::ILogger
 {
@@ -127,24 +247,47 @@ public:
 };
 #endif
 
+/**
+ * @class MyTensorRT
+ *
+ * @brief TensorRT推理引擎
+ *
+ * @li
+ * - 2023-06-24: zhongliangjian, create
+ */
 class MyTensorRT : public MyDnnEngine
 {
 public:
-	MyTensorRT() { m_engine_name = "TensorRT"; };
+	/**
+	 * @brief 构造函数
+	 */
+	MyTensorRT(): m_engine_name("TensorRT") {};
+
+	/**
+	 * @brief 构造函数
+	 */
 	~MyTensorRT() = default;
 
 #ifndef TENSORRT
-	// Initialize TensorRT inference engine
+	/**
+	 * @brief 推理引擎初始化（重写）
+	 */
 	virtual bool InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch) { return false; };
 
-	// Model inference
+	/**
+	 * @brief 执行推理（重写）
+	 */
 	virtual void Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs) {};
 #else
-	// Initialize TensorRT inference engine
-	virtual bool InitializeEngine(const std::string& onnx_model_path, const cv::Size& size, int channel, int batch);
+	/**
+	 * @brief 推理引擎初始化（重写）
+	 */
+	virtual bool InitializeEngine(const std::string& model_path, const cv::Size& size, int channel, int batch);
 
-	// Model inference
-	virtual cv::Mat Inference(const cv::Mat& input_mat);
+	/**
+	 * @brief 执行推理（重写）
+	 */
+	virtual void Inference(const cv::Mat& input_blob, std::vector<cv::Mat>& output_blobs);
 
 private:
 	nvinfer1::Dims m_input_dims;
